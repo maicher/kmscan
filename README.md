@@ -1,7 +1,6 @@
 # kmscan
 
-Canon Lide dedicated wrapper for scanimage(1)
-with image processing enhancements for scanning photos.
+Canon Lide dedicated wrapper for scanimage(1) with image processing enhancements.
 
 ## How to run
 
@@ -25,7 +24,7 @@ Uninstall:
 
 ## Development
 
-Run without installing in the system (pass arguments as `ARGS`):
+Pass arguments as `ARGS`:
 
     make run ARGS='-h'
 

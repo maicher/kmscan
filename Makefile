@@ -1,5 +1,5 @@
 build:
-	@CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=0.1" .
+	@CGO_ENABLED=0 go build -ldflags="-s -w" .
 
 run: build
 	@./kmscan $(ARGS)
