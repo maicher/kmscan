@@ -29,13 +29,13 @@ func (f *Filters) ApplyFilters(scan *Scan) {
 	t := time.Now()
 
 	scan.Maximum = f.max(scan.Image)
-	scan.Gray = f.gray(scan.Maximum)
+	scan.Gray = f.Gray(scan.Maximum)
 	scan.Binary = f.binary(scan.Gray)
 
-	f.Monitor.Processor(time.Since(t), "filters applied")
+	f.Monitor.MsgWithDuration(time.Since(t), "filters applied")
 }
 
-func (f *Filters) gray(src image.Image) *image.Gray {
+func (f *Filters) Gray(src image.Image) *image.Gray {
 	bounds := src.Bounds()
 	dst := image.NewGray(bounds)
 	draw.Draw(dst, bounds, src, bounds.Min, draw.Src)
@@ -50,6 +50,17 @@ func (f *Filters) max(src image.Image) image.Image {
 	)
 
 	dst := image.NewRGBA(g.Bounds(src.Bounds()))
+	g.Draw(dst, src)
+
+	return dst
+}
+
+func (f *Filters) Sharpen(src *image.Gray) *image.Gray {
+	g := gift.New(
+		gift.UnsharpMask(55, 0.5, 0.00),
+	)
+
+	dst := image.NewGray(src.Bounds())
 	g.Draw(dst, src)
 
 	return dst
@@ -72,4 +83,17 @@ func (f *Filters) binary(src *image.Gray) *image.Gray {
 	}
 
 	return dst
+}
+
+func (f *Filters) Rotate(src image.Image) image.Image {
+	// Create a new Gift filter for rotating the image by 90 degrees
+	g := gift.New(gift.Rotate90())
+
+	// Create a new image for the output
+	rotatedImg := image.NewRGBA(g.Bounds(src.Bounds()))
+
+	// Apply the rotation
+	g.Draw(rotatedImg, src)
+
+	return rotatedImg
 }

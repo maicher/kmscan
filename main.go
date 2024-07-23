@@ -13,46 +13,70 @@ import (
 //go:embed internal/config/kmscanrc.example.toml
 var kmscanrcExample string
 
+// Copied from: https://github.com/esimov/pigo/tree/master/cascade
+//
+//go:embed internal/config/puploc
+var puploc []byte
+
+// Copied from: https://github.com/esimov/pigo/tree/master/cascade
+//
+//go:embed internal/config/facefinder
+var facefinder []byte
+
 const cmdName = "scanimage"
 
 func main() {
 	var err error
 
 	opts := config.ParseOptions()
-	m := monitor.New()
-
-	resultPersister, err := kmscan.NewFilePersister(opts.ResultDir, m)
-	if err != nil {
-		m.InitError("%s", err)
-		os.Exit(1)
-	}
+	mon := monitor.NewMain()
+	procMon := monitor.NewProcessor()
 
 	k := kmscan.Kmscan{
-		Resolution: opts.Resolution,
+		Scanner: &kmscan.Scanner{
+			Resolution: opts.Resolution,
+			Monitor:    monitor.NewScanner(),
+		},
 		Filters: &kmscan.Filters{
 			Brightness: float32(opts.Brightness),
 			Window:     opts.Window,
 			Threshold:  opts.Threshold,
-			Monitor:    m,
+			Monitor:    procMon,
 		},
 		Extractor: &kmscan.Extractor{
 			MinHeight:      opts.MinHeight,
 			MinWidth:       opts.MinWidth,
 			MinAspectRatio: opts.MinAspectRatio,
 			MaxAspectRatio: opts.MaxAspectRatio,
-			Persister:      resultPersister,
-			Monitor:        m,
+			Monitor:        procMon,
 		},
-		Monitor: m,
+		FaceDetector: &kmscan.FaceDetector{
+			Puploc:     puploc,
+			Facefinder: facefinder,
+			Monitor:    procMon,
+		},
+		Uploader:           kmscan.NewUploader(opts.ResultDir, monitor.NewAPI()),
+		KeyboardController: &kmscan.KeyboardController{Monitor: monitor.NewUI()},
+		Monitor:            mon,
+	}
+
+	if err := k.FaceDetector.Load(); err != nil {
+		mon.Err("unable to load face detector: %s", err)
+		os.Exit(1)
+	}
+
+	if k.PhotoPersister, err = kmscan.NewFilePersister(opts.ResultDir, procMon); err != nil {
+		mon.Err("%s", err)
+		os.Exit(1)
 	}
 
 	if opts.Debug {
-		if k.DebugPersister, err = kmscan.NewFilePersister(opts.DebugDir, m); err != nil {
-			m.InitError("%s", err)
+		if k.ScanPersister, err = kmscan.NewFilePersister(opts.DebugDir, procMon); err != nil {
+			mon.Err("%s", err)
 			os.Exit(1)
 		}
 	} else {
-		k.DebugPersister = kmscan.NullPersister{}
+		k.ScanPersister = kmscan.NullPersister{}
 	}
 
 	if opts.ImagePath != "" {
@@ -61,10 +85,10 @@ func main() {
 		return
 	}
 
-	d := detector.New(m, cmdName)
+	d := detector.New(mon, cmdName)
 	devices, err := d.ReadOrDetect(opts.CacheDir, opts.ForceDetect)
 	if err != nil {
-		m.InitError("%s", err)
+		mon.Err("%s", err)
 		os.Exit(1)
 	}
 

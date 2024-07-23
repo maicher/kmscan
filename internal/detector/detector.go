@@ -27,7 +27,7 @@ func New(m *monitor.Monitor, cmdName string) *Detector {
 func (d *Detector) ReadOrDetect(cacheDir string, forceDetect bool) (devices []string, err error) {
 	devices, err = d.ReadDevices(cacheDir)
 	if err != nil {
-		d.monitor.Init("unable to read stored devices: %s", err)
+		d.monitor.Msg(err.Error(), "unable to read stored devices")
 	}
 
 	// Detect devices.
@@ -46,7 +46,7 @@ func (d *Detector) ReadOrDetect(cacheDir string, forceDetect bool) (devices []st
 }
 
 func (d *Detector) DetectScanimageDevices() (devices []string, err error) {
-	d.monitor.Init("detecting scanimage devices")
+	d.monitor.Msg("", "detecting scanimage devices")
 
 	var buf bytes.Buffer
 	var r *strings.Reader
@@ -71,10 +71,10 @@ func (d *Detector) DetectScanimageDevices() (devices []string, err error) {
 		if _, err := fmt.Fscanf(r, "%s %s", &blank, &device); err == nil {
 			device = replacements.Replace(device)
 			if strings.HasPrefix(device, "pixma:") {
-				d.monitor.Init("%s (detected)", s.Text())
+				d.monitor.Msg("detected", s.Text())
 				devices = append(devices, device)
 			} else {
-				d.monitor.Init(s.Text())
+				d.monitor.Msg("", s.Text())
 			}
 		}
 	}
@@ -87,7 +87,7 @@ func (d *Detector) DetectScanimageDevices() (devices []string, err error) {
 
 func (d *Detector) ReadDevices(cacheDir string) (devices []string, err error) {
 	filePath := path.Join(cacheDir, "devices")
-	d.monitor.Init("reading devices from %s", filePath)
+	d.monitor.Msg("", "reading devices from %s", filePath)
 
 	// Open the file for reading
 	file, err := os.Open(filePath)
@@ -99,7 +99,7 @@ func (d *Detector) ReadDevices(cacheDir string) (devices []string, err error) {
 	// Read lines from the file
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		d.monitor.Init(scanner.Text())
+		d.monitor.Msg("", scanner.Text())
 		devices = append(devices, scanner.Text())
 	}
 
@@ -112,7 +112,7 @@ func (d *Detector) ReadDevices(cacheDir string) (devices []string, err error) {
 
 func (d *Detector) StoreDevices(devices []string, cacheDir string) error {
 	filePath := path.Join(cacheDir, "devices")
-	d.monitor.Init("storing detected devices in %s", filePath)
+	d.monitor.Msg("", "storing detected devices in %s", filePath)
 
 	// Ensure the directory exists
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {

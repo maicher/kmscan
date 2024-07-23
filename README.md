@@ -31,3 +31,16 @@ Pass arguments as `ARGS`:
 Run tests:
 
     make run test
+
+## Troubleshooting
+
+If scanner stops responding, kill the scanning process:
+
+    $ pkill scanimage
+
+or restart the scanner:
+
+    # usb Canon restart
+
+You can find the implementation of the restart script here:
+https://github.com/maicher/dotfiles/blob/master/lib/.local/bin/usb

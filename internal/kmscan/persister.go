@@ -34,15 +34,15 @@ func (p FilePersister) Persist(img image.Image, name string) error {
 	outputPath := filepath.Join(p.dirPath, name)
 	outFile, err := os.Create(outputPath)
 	if err != nil {
-		return fmt.Errorf("Error creating output file: %s", err)
+		return fmt.Errorf("error creating output file: %s", err)
 	}
 	defer outFile.Close()
 
 	if err := jpeg.Encode(outFile, img, nil); err != nil {
-		return fmt.Errorf("Error saving image: %s", err)
+		return fmt.Errorf("error saving image: %s", err)
 	}
 
-	p.monitor.Processor(time.Since(t), "%s saved", name)
+	p.monitor.MsgWithDuration(time.Since(t), "%s saved", name)
 
 	return nil
 }

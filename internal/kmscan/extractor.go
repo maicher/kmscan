@@ -18,9 +18,10 @@ type Extractor struct {
 	Persister *FilePersister
 }
 
-func (e *Extractor) Extract(binaryImg *image.Gray, origImg image.Image) {
+// Extracts individual photos from the scanning result.
+func (e *Extractor) Extract(scan *Scan, out chan<- Photo) {
 	// Detect the rectangles
-	rectangles := e.findRectangles(binaryImg)
+	rectangles := e.findRectangles(scan.Binary)
 
 	// Filter rectangles based on size and aspect ratio criteria
 	filteredRectangles := e.filterRectangles(rectangles)
@@ -28,11 +29,14 @@ func (e *Extractor) Extract(binaryImg *image.Gray, origImg image.Image) {
 	// Save each detected rectangle as an image
 	t := time.Now().Format("20060102_150405")
 	for i, rect := range filteredRectangles {
-		roi := origImg.(interface {
+		roi := scan.Image.(interface {
 			SubImage(r image.Rectangle) image.Image
 		}).SubImage(rect)
 
-		e.Persister.Persist(roi, fmt.Sprintf("%s_%02d.jpg", t, i))
+		out <- Photo{
+			Name:  fmt.Sprintf("%s_%02d.jpg", t, i),
+			Image: roi,
+		}
 	}
 }
 
@@ -55,7 +59,7 @@ func (e *Extractor) findRectangles(img *image.Gray) []image.Rectangle {
 		}
 	}
 
-	e.Monitor.Processor(time.Since(t), "%d rectangles found", len(rectangles))
+	e.Monitor.MsgWithDuration(time.Since(t), "%d rectangles found", len(rectangles))
 
 	return rectangles
 }
@@ -116,17 +120,17 @@ func (e *Extractor) filterRectangles(rectangles []image.Rectangle) []image.Recta
 
 		if width >= e.MinWidth || height >= e.MinHeight {
 			if aspectRatio >= e.MinAspectRatio && aspectRatio <= e.MaxAspectRatio {
-				e.Monitor.ProcessorRatio(aspectRatio, "rectangle %03d picked", i)
+				e.Monitor.Msg(fmt.Sprintf("ratio %0.2f", aspectRatio), "rectangle %03d picked", i)
 
 				filtered = append(filtered, rect)
 			} else {
-				e.Monitor.ProcessorRatio(aspectRatio, "rectangle %03d rejected", i)
+				e.Monitor.Msg(fmt.Sprintf("ration %0.2f", aspectRatio), "rectangle %03d rejected", i)
 			}
 
 		}
 	}
 
-	e.Monitor.Processor(time.Since(t), "%d picked", len(filtered))
+	e.Monitor.MsgWithDuration(time.Since(t), "%d picked", len(filtered))
 
 	return filtered
 }
