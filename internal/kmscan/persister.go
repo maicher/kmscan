@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/maicher/kmscan/internal/monitor"
+	"github.com/maicher/kmscan/internal/ui"
 )
 
 type Persister interface {
@@ -17,15 +17,15 @@ type Persister interface {
 
 type FilePersister struct {
 	dirPath string
-	monitor *monitor.Monitor
+	ui *ui.Logger
 }
 
-func NewFilePersister(dirPath string, m *monitor.Monitor) (*FilePersister, error) {
+func NewFilePersister(dirPath string, m *ui.Logger) (*FilePersister, error) {
 	if err := os.MkdirAll(dirPath, 0755); err != nil {
 		return nil, fmt.Errorf("Error creating directory: %s", err)
 	}
 
-	return &FilePersister{dirPath: dirPath, monitor: m}, nil
+	return &FilePersister{dirPath: dirPath, ui: m}, nil
 }
 
 func (p FilePersister) Persist(img image.Image, name string) error {
@@ -42,7 +42,7 @@ func (p FilePersister) Persist(img image.Image, name string) error {
 		return fmt.Errorf("error saving image: %s", err)
 	}
 
-	p.monitor.MsgWithDuration(time.Since(t), "%s saved", name)
+	p.ui.MsgWithDuration(time.Since(t), "%s saved", name)
 
 	return nil
 }

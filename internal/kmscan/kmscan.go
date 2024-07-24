@@ -6,20 +6,19 @@ import (
 	"os"
 	"time"
 
-	"github.com/fatih/color"
-	"github.com/maicher/kmscan/internal/monitor"
+	"github.com/maicher/kmscan/internal/ui"
 )
 
 type Kmscan struct {
-	Scanner            *Scanner
-	Filters            *Filters
-	Extractor          *Extractor
-	FaceDetector       *FaceDetector
-	PhotoPersister     Persister
-	ScanPersister      Persister
-	Uploader           *Uploader
-	KeyboardController *KeyboardController
-	Monitor            *monitor.Monitor
+	Scanner        *Scanner
+	Filters        *Filters
+	Extractor      *Extractor
+	PhotoPersister Persister
+	ScanPersister  Persister
+	Autorotator    *Autorotator
+	Uploader       *Uploader
+	Keyboard       *ui.Keyboard
+	Logger         *ui.Logger
 }
 
 func (k *Kmscan) Run(devices []string) {
@@ -39,11 +38,11 @@ func (k *Kmscan) Run(devices []string) {
 	go k.loopPhotosProcessing(photosCh)
 
 	// Wait keyboard commands.
-	if err := k.KeyboardController.Listen(); err != nil {
-		k.Monitor.Err("unable to initialize keyboard: %s", err)
+	if err := k.Keyboard.Listen(); err != nil {
+		k.Logger.Err("unable to initialize keyboard: %s", err)
 	}
 
-	k.Monitor.Msg("", "quitting...")
+	k.Logger.Msg("", "quitting...")
 	cancel()
 	time.Sleep(1 * time.Second)
 }
@@ -53,15 +52,15 @@ func (k *Kmscan) ProcessImage(imagePath string) {
 
 	scan, err := NewScan(imagePath)
 	if err != nil {
-		k.Monitor.Err("%s", err)
+		k.Logger.Err("%s", err)
 		return
 	}
 
-	k.Monitor.Msg(imagePath, "file loaded")
+	k.Logger.Msg(imagePath, "file loaded")
 
 	k.Filters.ApplyFilters(scan)
 	if err := k.persistScans(scan); err != nil {
-		k.Monitor.Err("%s", err)
+		k.Logger.Err("%s", err)
 	}
 
 	go func() {
@@ -97,14 +96,14 @@ func (k *Kmscan) loopScansProcessing(scansCh chan string, photosCh chan Photo) {
 	for imagePath := range scansCh {
 		scan, err := NewScan(imagePath)
 		if err != nil {
-			k.Monitor.Err("%s", err)
+			k.Logger.Err("%s", err)
 			continue
 		}
 		defer os.Remove(imagePath)
 
 		k.Filters.ApplyFilters(scan)
 		if err := k.persistScans(scan); err != nil {
-			k.Monitor.Err("%s", err)
+			k.Logger.Err("%s", err)
 		}
 
 		k.Extractor.Extract(scan, photosCh)
@@ -112,55 +111,18 @@ func (k *Kmscan) loopScansProcessing(scansCh chan string, photosCh chan Photo) {
 }
 
 func (k *Kmscan) loopPhotosProcessing(photosCh <-chan Photo) {
-	imgs := [4]image.Image{}
-	grays := [4]*image.Gray{}
-	faces := [4]int{}
-	var i int
+	var img image.Image
 
 	for photo := range photosCh {
-		t := time.Now()
-		imgs[0] = photo.Image
-		grays[0] = k.Filters.Gray(imgs[0])
-		grays[0] = k.Filters.Sharpen(grays[0])
+		img = k.Autorotator.Autorotate(photo.Image, photo.Name)
 
-		faces[0] = k.FaceDetector.Faces(grays[0])
+		k.PhotoPersister.Persist(img, photo.Name)
 
-		imgs[1] = k.Filters.Rotate(imgs[0])
-		grays[1] = k.Filters.Gray(imgs[1])
-		faces[1] = k.FaceDetector.Faces(grays[1])
-
-		imgs[2] = k.Filters.Rotate(imgs[1])
-		grays[2] = k.Filters.Gray(imgs[2])
-		faces[2] = k.FaceDetector.Faces(grays[2])
-
-		imgs[3] = k.Filters.Rotate(imgs[2])
-		grays[3] = k.Filters.Gray(imgs[3])
-		faces[3] = k.FaceDetector.Faces(grays[3])
-
-		i = maxIndex(faces)
-		k.Monitor.MsgWithDuration(time.Since(t), "%s detected faces: %s %s %s %s",
-			photo.Name,
-			picked(faces[0], i, 0),
-			picked(faces[1], i, 1),
-			picked(faces[2], i, 2),
-			picked(faces[3], i, 3),
-		)
-
-		k.PhotoPersister.Persist(imgs[i], photo.Name)
 		if err := k.Uploader.Upload(photo.Name); err != nil {
-			time.Sleep(50 * time.Millisecond)
-			k.Monitor.Msg("", "retrying to upload")
+			time.Sleep(100 * time.Millisecond)
 			k.Uploader.Upload(photo.Name)
 		}
 	}
-}
-
-func picked(faces, picked, i int) string {
-	if picked == i {
-		return color.HiGreenString("%d", faces)
-	}
-
-	return color.WhiteString("%d", faces)
 }
 
 func (k *Kmscan) persistScans(scan *Scan) error {

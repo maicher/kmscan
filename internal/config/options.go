@@ -45,12 +45,14 @@ OPTIONS
                               $XDG_CACHE_HOME/kmscan or $HOME/.cache/kmscan
   --result-dir PATH           path to a result dir
                               (deault: ./results)
+  --no-color,            -n   disable colored output
 `
 
 type Options struct {
 	ConfigPath  string
 	CacheDir    string
 	ResultDir   string
+	NoColor     bool
 	ForceDetect bool
 	Debug       bool
 	DebugDir    string
@@ -76,6 +78,9 @@ func ParseOptions() Options {
 	flag.StringVar(&opts.CacheDir, "debug-dir", "", "")
 
 	flag.StringVar(&opts.ResultDir, "result-dir", "results", "")
+
+	flag.BoolVar(&opts.NoColor, "no-color", false, "")
+	flag.BoolVar(&opts.NoColor, "n", false, "")
 
 	flag.BoolVar(&opts.ForceDetect, "detect", false, "")
 	flag.BoolVar(&opts.ForceDetect, "d", false, "")

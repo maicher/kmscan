@@ -11,16 +11,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/maicher/kmscan/internal/monitor"
+	"github.com/maicher/kmscan/internal/ui"
 )
 
 type Uploader struct {
-	dirPath string
-	monitor *monitor.Monitor
-}
-
-func NewUploader(dirPath string, m *monitor.Monitor) *Uploader {
-	return &Uploader{dirPath: dirPath, monitor: m}
+	DirPath string
+	Logger *ui.Logger
 }
 
 type FileUploadRequest struct {
@@ -30,7 +26,7 @@ type FileUploadRequest struct {
 
 func (u Uploader) Upload(name string) error {
 	if err := u.upload(name); err != nil {
-		u.monitor.Err(err.Error())
+		u.Logger.Err(err.Error())
 
 		return err
 	}
@@ -39,7 +35,7 @@ func (u Uploader) Upload(name string) error {
 }
 
 func (u Uploader) upload(name string) error {
-	outputPath := filepath.Join(u.dirPath, name)
+	outputPath := filepath.Join(u.DirPath, name)
 	t := time.Now()
 	outFile, err := os.Open(outputPath)
 	if err != nil {
@@ -78,7 +74,7 @@ func (u Uploader) upload(name string) error {
 		return fmt.Errorf("error reading response: %w", err)
 	}
 
-	u.monitor.MsgWithDuration(time.Since(t), "%s %s", name, respBody)
+	u.Logger.MsgWithDuration(time.Since(t), "%s %s", name, respBody)
 
 	return nil
 }

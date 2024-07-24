@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/disintegration/gift"
-	"github.com/maicher/kmscan/internal/monitor"
+	"github.com/maicher/kmscan/internal/ui"
 )
 
 type Filters struct {
@@ -22,7 +22,7 @@ type Filters struct {
 	// Should be between 0 and 255.
 	Threshold int
 
-	Monitor *monitor.Monitor
+	Logger *ui.Logger
 }
 
 func (f *Filters) ApplyFilters(scan *Scan) {
@@ -32,7 +32,7 @@ func (f *Filters) ApplyFilters(scan *Scan) {
 	scan.Gray = f.Gray(scan.Maximum)
 	scan.Binary = f.binary(scan.Gray)
 
-	f.Monitor.MsgWithDuration(time.Since(t), "filters applied")
+	f.Logger.MsgWithDuration(time.Since(t), "filters applied")
 }
 
 func (f *Filters) Gray(src image.Image) *image.Gray {

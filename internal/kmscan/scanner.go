@@ -7,12 +7,12 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/maicher/kmscan/internal/monitor"
+	"github.com/maicher/kmscan/internal/ui"
 )
 
 type Scanner struct {
 	Resolution int
-	Monitor    *monitor.Monitor
+	Logger    *ui.Logger
 }
 
 func (s *Scanner) Scan(ctx context.Context, device string, deviceNo, i int) (string, error) {
@@ -21,14 +21,14 @@ func (s *Scanner) Scan(ctx context.Context, device string, deviceNo, i int) (str
 	// Open a temporary file in RAM (in the /dev/shm directory)
 	file, err := os.CreateTemp("/dev/shm", "scan_*.png")
 	if err != nil {
-		s.Monitor.Err("failed to create temporary file: %s", err)
+		s.Logger.Err("failed to create temporary file: %s", err)
 	}
 
 	if i%10 == 0 {
-		s.Monitor.Msg("press SEND button on the scanner", "ready for scan %d with calibrate", i+1)
+		s.Logger.Msg("press SEND button on the scanner", "ready for scan %d with calibrate", i+1)
 		calibrate = "always"
 	} else {
-		s.Monitor.Msg("press SEND button on the scanner", "ready for scan %d", i+1)
+		s.Logger.Msg("press SEND button on the scanner", "ready for scan %d", i+1)
 		calibrate = "never"
 	}
 
@@ -44,14 +44,14 @@ func (s *Scanner) Scan(ctx context.Context, device string, deviceNo, i int) (str
 	cmd.Stdout = file
 	if err = cmd.Run(); err != nil {
 		if ctx.Err() == context.Canceled {
-			s.Monitor.Msg("cancellation", "scanning interrupted")
+			s.Logger.Msg("cancellation", "scanning interrupted")
 			return "", errors.New("cencelled")
 		} else {
-			s.Monitor.Err("error scanning: %s", err)
+			s.Logger.Err("error scanning: %s", err)
 			return "", err
 		}
 	}
-	s.Monitor.Msg("", "scanning %d complete", i+1)
+	s.Logger.Msg("", "scanning %d complete", i+1)
 
 	return file.Name(), nil
 }

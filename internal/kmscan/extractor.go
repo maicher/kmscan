@@ -5,7 +5,7 @@ import (
 	"image"
 	"time"
 
-	"github.com/maicher/kmscan/internal/monitor"
+	"github.com/maicher/kmscan/internal/ui"
 )
 
 type Extractor struct {
@@ -14,35 +14,36 @@ type Extractor struct {
 	MinAspectRatio float64
 	MaxAspectRatio float64
 
-	Monitor   *monitor.Monitor
+	Logger    *ui.Logger
 	Persister *FilePersister
 }
 
 // Extracts individual photos from the scanning result.
 func (e *Extractor) Extract(scan *Scan, out chan<- Photo) {
 	// Detect the rectangles
+	t := time.Now()
 	rectangles := e.findRectangles(scan.Binary)
+	e.Logger.MsgWithDuration(time.Since(t), "%d rectangles detected", len(rectangles))
 
 	// Filter rectangles based on size and aspect ratio criteria
 	filteredRectangles := e.filterRectangles(rectangles)
 
-	// Save each detected rectangle as an image
-	t := time.Now().Format("20060102_150405")
+	// Init image from each detected rectangle
+	tfmt := time.Now().Format("20060102_150405")
 	for i, rect := range filteredRectangles {
 		roi := scan.Image.(interface {
 			SubImage(r image.Rectangle) image.Image
 		}).SubImage(rect)
 
 		out <- Photo{
-			Name:  fmt.Sprintf("%s_%02d.jpg", t, i),
+			Name:  fmt.Sprintf("%s_%02d.jpg", tfmt, i),
 			Image: roi,
 		}
 	}
+	e.Logger.Msg("", "%d images extracted", len(filteredRectangles))
 }
 
 func (e *Extractor) findRectangles(img *image.Gray) []image.Rectangle {
-	t := time.Now()
-
 	bounds := img.Bounds()
 	var rectangles []image.Rectangle
 	visited := make([][]bool, bounds.Max.Y)
@@ -58,8 +59,6 @@ func (e *Extractor) findRectangles(img *image.Gray) []image.Rectangle {
 			}
 		}
 	}
-
-	e.Monitor.MsgWithDuration(time.Since(t), "%d rectangles found", len(rectangles))
 
 	return rectangles
 }
@@ -110,8 +109,6 @@ func (e *Extractor) findBoundingBox(img *image.Gray, startX, startY int, visited
 }
 
 func (e *Extractor) filterRectangles(rectangles []image.Rectangle) []image.Rectangle {
-	t := time.Now()
-
 	var filtered []image.Rectangle
 	for i, rect := range rectangles {
 		width := rect.Dx()
@@ -120,17 +117,15 @@ func (e *Extractor) filterRectangles(rectangles []image.Rectangle) []image.Recta
 
 		if width >= e.MinWidth || height >= e.MinHeight {
 			if aspectRatio >= e.MinAspectRatio && aspectRatio <= e.MaxAspectRatio {
-				e.Monitor.Msg(fmt.Sprintf("ratio %0.2f", aspectRatio), "rectangle %03d picked", i)
+				e.Logger.Msg(fmt.Sprintf("ratio %0.2f", aspectRatio), "  rectangle %03d picked", i)
 
 				filtered = append(filtered, rect)
 			} else {
-				e.Monitor.Msg(fmt.Sprintf("ration %0.2f", aspectRatio), "rectangle %03d rejected", i)
+				e.Logger.Msg(fmt.Sprintf("ration %0.2f", aspectRatio), "  rectangle %03d rejected", i)
 			}
 
 		}
 	}
-
-	e.Monitor.MsgWithDuration(time.Since(t), "%d picked", len(filtered))
 
 	return filtered
 }

@@ -5,11 +5,11 @@ import (
 	"image"
 
 	pigo "github.com/esimov/pigo/core"
-	"github.com/maicher/kmscan/internal/monitor"
+	"github.com/maicher/kmscan/internal/ui"
 )
 
 type FaceDetector struct {
-	Monitor    *monitor.Monitor
+	Logger    *ui.Logger
 	Puploc     []byte
 	Facefinder []byte
 
@@ -38,7 +38,7 @@ func (fd *FaceDetector) Load() error {
 	return nil
 }
 
-// Returns true if a face was found in the image.
+// Returns number of face was found in the image.
 func (fd *FaceDetector) Faces(img *image.Gray) int {
 	// var face, left, right bool
 	// t := time.Now()
@@ -90,7 +90,7 @@ func (fd *FaceDetector) Faces(img *image.Gray) int {
 
 	// return face && right && left
 
-	// fd.Monitor.Processor(time.Since(t), "detected %d faces", faces)
+	// fd.Logger.Processor(time.Since(t), "detected %d faces", faces)
 
 	return faces
 }
