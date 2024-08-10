@@ -46,6 +46,8 @@ OPTIONS
   --result-dir PATH           path to a result dir
                               (deault: ./results)
   --no-color,            -n   disable colored output
+  --api-url,             -u
+  --api-key,             -k
 `
 
 type Options struct {
@@ -57,6 +59,8 @@ type Options struct {
 	Debug       bool
 	DebugDir    string
 	ImagePath   string
+	APIURL      string
+	APIKey      string
 
 	Resolution     int
 	MinHeight      int
@@ -90,6 +94,12 @@ func ParseOptions() Options {
 
 	flag.StringVar(&opts.ImagePath, "image-path", "", "")
 	flag.StringVar(&opts.ImagePath, "i", "", "")
+
+	flag.StringVar(&opts.APIURL, "api-url", "", "")
+	flag.StringVar(&opts.APIURL, "u", "", "")
+
+	flag.StringVar(&opts.APIKey, "api-key", "", "")
+	flag.StringVar(&opts.APIKey, "k", "", "")
 
 	flag.IntVar(&opts.Resolution, "resolution", 600, "")
 	flag.IntVar(&opts.Resolution, "r", 600, "")

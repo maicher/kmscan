@@ -14,9 +14,37 @@ import (
 	"github.com/maicher/kmscan/internal/ui"
 )
 
-type Uploader struct {
+type Uploader interface {
+	Upload(string) error
+}
+
+func NewUploader(dirPath, apiURL, apiKey string, logger *ui.Logger) Uploader {
+	if apiURL == "" {
+		logger.Warn("no api-url, images will not be uploaded")
+		return &NullUploader{}
+	}
+
+	return &APIUploader{
+		DirPath: dirPath,
+		APIURL:  apiURL,
+		APIKey:  apiKey,
+		Logger:  logger,
+	}
+}
+
+type NullUploader struct{}
+
+func (u NullUploader) Upload(_ string) error {
+	return nil
+}
+
+type APIUploader struct {
 	DirPath string
-	Logger *ui.Logger
+	APIURL  string
+	APIKey  string
+	Logger  *ui.Logger
+
+	client http.Client
 }
 
 type FileUploadRequest struct {
@@ -24,7 +52,7 @@ type FileUploadRequest struct {
 	Data     string `json:"data"`
 }
 
-func (u Uploader) Upload(name string) error {
+func (u APIUploader) Upload(name string) error {
 	if err := u.upload(name); err != nil {
 		u.Logger.Err(err.Error())
 
@@ -34,7 +62,7 @@ func (u Uploader) Upload(name string) error {
 	return nil
 }
 
-func (u Uploader) upload(name string) error {
+func (u APIUploader) upload(name string) error {
 	outputPath := filepath.Join(u.DirPath, name)
 	t := time.Now()
 	outFile, err := os.Open(outputPath)
@@ -62,7 +90,12 @@ func (u Uploader) upload(name string) error {
 	}
 
 	// Send the request
-	resp, err := http.Post("http://localhost:9500/api/upload", "application/json", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", u.APIURL, bytes.NewBuffer(jsonData))
+	req.Header.Set("api-key", u.APIKey)
+	if err != nil {
+		return fmt.Errorf("error building request: %w", err)
+	}
+	resp, err := u.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("error sending request: %w", err)
 	}

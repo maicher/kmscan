@@ -24,7 +24,7 @@ func NewProcLogger() *Logger {
 }
 
 func NewAPILogger() *Logger {
-	return &Logger{prefix: color.YellowString("api   ")}
+	return &Logger{prefix: color.HiGreenString("api   ")}
 }
 
 func NewUILogger() *Logger {
@@ -43,6 +43,13 @@ func (l *Logger) Err(format string, a ...any) {
 	fmt.Println(
 		l.prefix,
 		color.RedString(format, a...),
+	)
+}
+
+func (l *Logger) Warn(format string, a ...any) {
+	fmt.Println(
+		l.prefix,
+		color.YellowString(format, a...),
 	)
 }
 

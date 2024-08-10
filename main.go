@@ -75,10 +75,7 @@ func main() {
 			Filters:      filters,
 			Logger:       procLogger,
 		},
-		Uploader: &kmscan.Uploader{
-			DirPath: opts.ResultDir,
-			Logger:  apiLogger,
-		},
+		Uploader: kmscan.NewUploader(opts.ResultDir, opts.APIURL, opts.APIKey, apiLogger),
 		Keyboard: &ui.Keyboard{
 			Logger: uiLogger,
 		},

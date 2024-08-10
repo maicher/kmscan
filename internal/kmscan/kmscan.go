@@ -16,7 +16,7 @@ type Kmscan struct {
 	PhotoPersister Persister
 	ScanPersister  Persister
 	Autorotator    *Autorotator
-	Uploader       *Uploader
+	Uploader       Uploader
 	Keyboard       *ui.Keyboard
 	Logger         *ui.Logger
 }
