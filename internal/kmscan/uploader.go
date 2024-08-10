@@ -92,6 +92,7 @@ func (u APIUploader) upload(name string) error {
 	// Send the request
 	req, err := http.NewRequest("POST", u.APIURL, bytes.NewBuffer(jsonData))
 	req.Header.Set("api-key", u.APIKey)
+	req.Header.Set("content-type", "application/json")
 	if err != nil {
 		return fmt.Errorf("error building request: %w", err)
 	}
@@ -107,7 +108,11 @@ func (u APIUploader) upload(name string) error {
 		return fmt.Errorf("error reading response: %w", err)
 	}
 
-	u.Logger.MsgWithDuration(time.Since(t), "%s %s", name, respBody)
+	if resp.StatusCode == 200 {
+		u.Logger.MsgWithDuration(time.Since(t), "%s %s", name, respBody)
+	} else {
+		u.Logger.Warn("%s %s", name, respBody)
+	}
 
 	return nil
 }

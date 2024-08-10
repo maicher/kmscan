@@ -11,7 +11,7 @@ import (
 type Autorotator struct {
 	FaceDetector *FaceDetector
 	Filters      *Filters
-	Logger      *ui.Logger
+	Logger       *ui.Logger
 }
 
 func (a *Autorotator) Autorotate(img image.Image, name string) image.Image {
@@ -32,7 +32,7 @@ func (a *Autorotator) Autorotate(img image.Image, name string) image.Image {
 		faces[i] = a.FaceDetector.Faces(grays[i])
 	}
 
-	picked = maxIndex(faces)
+	picked = a.maxIndex(faces)
 	a.Logger.MsgWithDuration(time.Since(t), "%s faces: %s %s %s %s",
 		name,
 		a.msg(faces[0], picked, 0),
@@ -49,4 +49,18 @@ func (a *Autorotator) msg(faces, picked, i int) string {
 	}
 
 	return color.WhiteString("%d", faces)
+}
+
+func (a *Autorotator) maxIndex(arr [4]int) int {
+	maxIdx := 0
+	maxValue := arr[0]
+
+	for i, value := range arr {
+		if value > maxValue {
+			maxValue = value
+			maxIdx = i
+		}
+	}
+
+	return maxIdx
 }

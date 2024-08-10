@@ -119,7 +119,6 @@ func (k *Kmscan) loopPhotosProcessing(photosCh <-chan Photo) {
 		k.PhotoPersister.Persist(img, photo.Name)
 
 		if err := k.Uploader.Upload(photo.Name); err != nil {
-			time.Sleep(100 * time.Millisecond)
 			k.Uploader.Upload(photo.Name)
 		}
 	}
@@ -143,18 +142,4 @@ func (k *Kmscan) persistScans(scan *Scan) error {
 	}
 
 	return nil
-}
-
-func maxIndex(arr [4]int) int {
-	maxIdx := 0
-	maxValue := arr[0]
-
-	for i, value := range arr {
-		if value > maxValue {
-			maxValue = value
-			maxIdx = i
-		}
-	}
-
-	return maxIdx
 }
