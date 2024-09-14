@@ -20,7 +20,7 @@ type Uploader interface {
 
 func NewUploader(dirPath, apiURL, apiKey string, logger *ui.Logger) Uploader {
 	if apiURL == "" {
-		logger.Warn("no api-url, images will not be uploaded")
+		logger.Warn("no api-url, images will not be uploaded to the server")
 		return &NullUploader{}
 	}
 

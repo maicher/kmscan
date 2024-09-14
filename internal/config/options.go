@@ -46,8 +46,15 @@ OPTIONS
   --result-dir PATH           path to a result dir
                               (deault: ./results)
   --no-color,            -n   disable colored output
-  --api-url,             -u
-  --api-key,             -k
+  --api-url,             -u   (optional) this option allows you to upload scanned images
+                              to a server via an API endpoint,
+                              when used, the program will send the image data
+                              to the server in the body of a POST request,
+                              the structure of the body is as follows:
+                                filename: The name of the file being uploaded
+                                data: The image file encoded as a Base64 string
+  --api-key,             -k   (optional) API key to authenticate the upload request,
+                              the key is sent as a HTTP header  under the "api-key" field
 `
 
 type Options struct {
