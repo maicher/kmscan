@@ -1,0 +1,52 @@
+# Below options, when defined can be overwritten by CLI arguments.
+# When not defined, CLI argument defaults will be used.
+# see: kmscan -h
+
+# profile-name = ""
+# cache-dir = ""
+# result-dir = ""
+# force-detect = false
+# debug = false
+# debug-dir = ""
+# no-color = false
+# image-path = ""
+# api-url = ""
+# api-key = ""
+
+# Profiles are required to be defined here.
+# At least one profile needs to be defined.
+# The first profile will be the default.
+# eg. to pick the "med" profile, run:
+#   kmscan --profile-name med
+[[profile]]
+name = "hi"
+resolution = 600 # resolution of the scan in dpi, available values: 300, 600, 1200, 2400, 4800
+min-height = 2000
+min-width = 2000
+min-aspect-ratio = 0.5
+max-aspect-ratio = 2.0
+brightness = 2.0
+window = 13
+threshold = 245
+
+[[profile]]
+name = "med"
+resolution = 300
+min-height = 1000
+min-width = 1000
+min-aspect-ratio = 0.5
+max-aspect-ratio = 2.0
+brightness = 2.0
+window = 13
+threshold = 245
+
+[[profile]]
+name = "lo"
+resolution = 150
+min-height = 500
+min-width = 500
+min-aspect-ratio = 0.5
+max-aspect-ratio = 2.0
+brightness = 2.0
+window = 13
+threshold = 245

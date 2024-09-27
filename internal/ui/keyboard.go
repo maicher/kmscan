@@ -6,8 +6,11 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
+type handlerFunc = func() string
+
 type Keyboard struct {
-	Logger *Logger
+	InfoHandler handlerFunc
+	Logger      *Logger
 }
 
 func (k *Keyboard) Listen() error {
@@ -30,8 +33,9 @@ func (k *Keyboard) Listen() error {
 		}
 
 		if char == 'i' || char == 'I' {
-			k.Logger.Msg("", `info
-This is an example message.`)
+			if k.InfoHandler != nil {
+				k.Logger.Msg("", k.InfoHandler())
+			}
 		}
 
 		if char == 'h' || char == 'H' {

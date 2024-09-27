@@ -17,12 +17,12 @@ type Persister interface {
 
 type FilePersister struct {
 	dirPath string
-	ui *ui.Logger
+	ui      *ui.Logger
 }
 
 func NewFilePersister(dirPath string, m *ui.Logger) (*FilePersister, error) {
 	if err := os.MkdirAll(dirPath, 0755); err != nil {
-		return nil, fmt.Errorf("Error creating directory: %s", err)
+		return nil, fmt.Errorf("error creating directory: %s", err)
 	}
 
 	return &FilePersister{dirPath: dirPath, ui: m}, nil

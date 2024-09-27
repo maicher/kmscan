@@ -12,7 +12,7 @@ import (
 
 type Scanner struct {
 	Resolution int
-	Logger    *ui.Logger
+	Logger     *ui.Logger
 }
 
 func (s *Scanner) Scan(ctx context.Context, device string, deviceNo, i int) (string, error) {

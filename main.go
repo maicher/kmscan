@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"fmt"
 	"os"
 
 	"github.com/fatih/color"
@@ -28,22 +29,39 @@ const cmdName = "scanimage"
 
 func main() {
 	var err error
+	var profile *config.Profile
 
-	opts := config.ParseOptions()
+	mainLogger := ui.NewMainLogger()
+
+	// Read options from kmscanrc file.
+	optsRC, err := config.NewOptionsRC(kmscanrcExample)
+	if err != nil {
+		mainLogger.Err("%s", err)
+		os.Exit(1)
+	}
+
+	// Parse options from CLI with fallback to kmscanrc options.
+	opts := config.ParseOptions(optsRC)
 	if opts.NoColor {
 		color.NoColor = true
 	}
 
-	mainLogger := ui.NewMainLogger()
+	profile, err = optsRC.GetProfile(opts.ProfileName)
+	if err != nil {
+		mainLogger.Err("%s", err)
+		os.Exit(1)
+	}
+	mainLogger.Msg("", "profile name: %s", profile.Name)
+
 	procLogger := ui.NewProcLogger()
 	scanLogger := ui.NewScanLogger()
 	apiLogger := ui.NewAPILogger()
 	uiLogger := ui.NewUILogger()
 
 	filters := &kmscan.Filters{
-		Brightness: float32(opts.Brightness),
-		Window:     opts.Window,
-		Threshold:  opts.Threshold,
+		Brightness: float32(profile.Brightness),
+		Window:     profile.Window,
+		Threshold:  profile.Threshold,
 		Logger:     procLogger,
 	}
 
@@ -57,17 +75,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	keyboard := &ui.Keyboard{
+		InfoHandler: func() string {
+			return fmt.Sprintf("%+v\n%+v", profile, opts)
+		},
+		Logger: uiLogger,
+	}
+
 	k := kmscan.Kmscan{
 		Scanner: &kmscan.Scanner{
-			Resolution: opts.Resolution,
+			Resolution: profile.Resolution,
 			Logger:     scanLogger,
 		},
 		Filters: filters,
 		Extractor: &kmscan.Extractor{
-			MinHeight:      opts.MinHeight,
-			MinWidth:       opts.MinWidth,
-			MinAspectRatio: opts.MinAspectRatio,
-			MaxAspectRatio: opts.MaxAspectRatio,
+			MinHeight:      profile.MinHeight,
+			MinWidth:       profile.MinWidth,
+			MinAspectRatio: profile.MinAspectRatio,
+			MaxAspectRatio: profile.MaxAspectRatio,
 			Logger:         procLogger,
 		},
 		Autorotator: &kmscan.Autorotator{
@@ -76,20 +101,18 @@ func main() {
 			Logger:       procLogger,
 		},
 		Uploader: kmscan.NewUploader(opts.ResultDir, opts.APIURL, opts.APIKey, apiLogger),
-		Keyboard: &ui.Keyboard{
-			Logger: uiLogger,
-		},
-		Logger: mainLogger,
+		Keyboard: keyboard,
+		Logger:   mainLogger,
 	}
 
 	if k.PhotoPersister, err = kmscan.NewFilePersister(opts.ResultDir, procLogger); err != nil {
-		mainLogger.Err("%s", err)
+		mainLogger.Err("PhotoPersister: %s", err)
 		os.Exit(1)
 	}
 
 	if opts.Debug {
 		if k.ScanPersister, err = kmscan.NewFilePersister(opts.DebugDir, procLogger); err != nil {
-			mainLogger.Err("%s", err)
+			mainLogger.Err("ScanPersister: %s", err)
 			os.Exit(1)
 		}
 	} else {

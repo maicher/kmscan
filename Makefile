@@ -10,7 +10,7 @@ test:
 clean:
 	rm -f kmscan
 
-install:
+install: build
 	mkdir -p /usr/local/bin
 	cp -f kmscan /usr/local/bin
 	chmod 755 /usr/local/bin/kmscan
